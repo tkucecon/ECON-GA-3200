@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 # About this code
 # written by Takanori Takeuchi(tt2292@nyu.edu)
-# how to recycle the python code used in the util folder
+# HP filtering to the G7 countries
 # ------------------------------------------------------------------------------
 
 # set up------------------------------------------------------------------------
@@ -16,6 +16,7 @@
   theme_set(theme_solarized())
   
 # load the function
+  source("util/safunc.R")
   source("util/hpfilter.R")
 
 # download data using the python module-----------------------------------------
@@ -30,7 +31,7 @@
 # set up the parameters
   start <- as.Date("1996-1-1")
   end <- as.Date("2022-12-31")
-  countries <- c('US', 'JP', 'DE')
+  countries <- c('US', 'JP', 'DE', 'CA', 'FR', 'UK', 'IT')
   indicators <- c('RGDP', 'RPRC')
 
 # load the Econdb class
@@ -48,8 +49,9 @@
 # conduct the HP filtering------------------------------------------------------
   
   plot_hp(df = df_q,
-          ctry = "DE",
-          indicator = "RPRC", 
+          ctry = "JP",
+          indicator = "RGDP", 
           freq = 4, 
-          save = TRUE)
+          save = TRUE, 
+          out.type = "figure")
     
