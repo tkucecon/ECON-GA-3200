@@ -49,7 +49,7 @@
   
   plot_hp(df = df_q,
           ctry = "DE",
-          indicator = "RGDP", 
+          indicator = "RPRC", 
           freq = 4, 
           save = TRUE)
     

@@ -21,6 +21,11 @@
   
 plot_hp <- function(df, ctry, indicator, freq, save){
   
+  # drop NA rows in advance
+  df <- 
+    df %>% 
+    drop_na()
+  
   # save lambda according to the frequency
   if (freq == 4) {
     lamb <- 1600
@@ -33,7 +38,6 @@ plot_hp <- function(df, ctry, indicator, freq, save){
   # remove the seasonal component
   ts.nsa <- 
     df %>% 
-    drop_na() %>% 
     filter(country == ctry) %>% 
     select(indicator) %>%
     unlist() %>% 
