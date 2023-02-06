@@ -50,7 +50,7 @@ class Econdb:
         # set date as the index
         df_m.set_index(pd.to_datetime(df_m['date']), inplace = True)
         # calculate the quarterly average
-        df_q = df_m.groupby('country').resample('Q').mean()
+        df_q = df_m.groupby('country').resample('Q', label = 'left').mean()
         return df_q
 
 
