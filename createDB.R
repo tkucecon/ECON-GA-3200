@@ -8,7 +8,7 @@
 # 2. Cabinet Office of Japan for Japan (see 4.data folder for details)
 # 3. Eurostat through Econdb for the Euro countries
 # ↑ They are all constructed as seasonally adjusted quarterly real data
-# 4. Econdb for other countries
+# 4. Econdb for other indices or countries
 #    Note that Econdb data covers the broad economic data worldwide
 #    but not seasonally adjusted!
 # ------------------------------------------------------------------------------
@@ -21,9 +21,6 @@
   library("lubridate")
   library("readxl")
   library("tidyquant")
-
-  # load the function
-  source("util/safunc.R")
 
 # 1. download data from FRED----------------------------------------------------
 
@@ -56,8 +53,8 @@
   # If not, then find the directory of your python and run the following code
   # use_python("C:/Anaconda3/envs/ML/python.exe")
   
-  # Import Python Library
-  
+  # Import the file I used
+  source_python("util/econdb.py")
   
   # set up the parameters
   start <- as.Date("1994-1-1")
@@ -81,31 +78,59 @@
     select(date, country, GDP, PCEC, GPDI)
   
 # 4. download data from Econdb--------------------------------------------------
-
-  # I don't use this chunk for now but you can remove the comment out anytime 
+# For other indices, you can download any variables you like from Econdb
   
-  # # For other countries, you can download any variables you like from Econdb
-  # countries <- c('DE', 'CA', 'FR', 'UK', 'IT')
-  # indicators <- c('RGDP', 'RPRC')
-  # 
-  # # load the Econdb class
-  # econdb <- Econdb(start, end, countries, indicators)
-  # 
-  # # get the quarterly data
-  # df_q <-
-  #   econdb$df_q()
-  # 
-  # df_q <-
-  #   df_q %>%
-  #   cbind(py_to_r(attributes(df_q)$pandas.index$to_frame())) %>%
-  #   mutate(date = ymd(as.Date(date)))
+  # set up the parameters
+  start <- as.Date("1990-1-1")
+  end <- as.Date("2022-12-31")
+  countries <- c('US', 'JP', 'DE', 'FR', 'UK', 'IT', 'EA')
+  indicators <- c('CPI', # consumer price index
+                  'PCE', # personal consumption expenditure price index
+                  'POLIR', # policy rate (short term rate)
+                  'Y10YD' # 10-year yield (long term rate)
+                  )
 
+  # load the Econdb class
+  econdb <- Econdb(start, end, countries, indicators)
+
+  # get the quarterly data
+  df.rate <-
+    econdb$df_q()
+  df.rate <-
+    df.rate %>%
+    cbind(py_to_r(attributes(df.rate)$pandas.index$to_frame())) %>%
+    mutate(date = ymd(as.Date(date)) + 1)
+  
+  # get the policy rates of EU area
+  df.eapolir <- 
+    df.rate %>% 
+    filter(country == "EA") %>% 
+    rename(POLIR.EA = POLIR) %>% 
+    select(date, POLIR.EA)
+  
+  eu.countries <- c('DE', 'FR', 'UK', 'IT')
+  
+  # process the data 
+  df.rate <-
+    df.rate %>% 
+    mutate(PRICE = ifelse(country =="US", PCE, CPI)) %>% 
+    mutate(PI = PRICE / lag(PRICE, n = 4) * 100 - 100) %>% 
+    left_join(df.eapolir, by = "date") %>% 
+    mutate(POLIR = ifelse(country %in% eu.countries, 
+                          POLIR.EA, POLIR)) %>% 
+    select(date, country, PI, POLIR, Y10YD) %>% 
+    filter(country != "EA")
+    
 # Merge the data----------------------------------------------------------------
   
-  # Now merge all the data and save as the master db for filtering
+  # Now merge all the GDP data 
   df.gdp <- 
     rbind(df.us, df.jp, df.euro)
   
-  # save in the data folder
-  save(df.gdp, file = "../4_data/df_gdp.rda")
+  # then merge the quarterly data
+  df.macro <- 
+    left_join(df.gdp, df.rate, by = c('country', 'date'))
+  
+  # save as the master db for filtering in the 4_data folder
+  save(df.macro, file = "../4_data/df_macro.rda")
   

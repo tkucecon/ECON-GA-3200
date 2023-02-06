@@ -21,12 +21,12 @@
   
 # load the GDP data-------------------------------------------------------------
   
-  load("../4_data/df_gdp.rda")
+  load("../4_data/df_macro.rda")
 
 # conduct the HP filtering------------------------------------------------------
   
   # single run: HP filtering
-  plot_hp(df = df.gdp,
+  plot_hp(df = df.macro,
           ctry = "JP",
           indicator = "GDP", 
           freq = 4, 
@@ -34,7 +34,7 @@
           out.type = "data")
   
   # single run: Kalman filtering
-  plot_kalman(df = df.gdp,
+  plot_kalman(df = df.macro,
               ctry = "JP",
               indicator = "GDP", 
               save = TRUE, 
@@ -51,7 +51,7 @@
   # run for all countries: HP filtering
   sapply(X = countries, 
          FUN = plot_hp,
-         df = df.gdp,
+         df = df.macro,
          indicator = "GDP", 
          freq = 4, 
          save = TRUE, 
@@ -60,7 +60,7 @@
   # run for all countries: Kalman filtering
   sapply(X = countries, 
          FUN = plot_kalman,
-         df = df.gdp,
+         df = df.macro,
          indicator = "GDP", 
          save = TRUE, 
          out.type = "neither")
