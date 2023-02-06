@@ -16,9 +16,6 @@
   
   options(warn = -1)
   
-  # safunc needed to run this code:
-  # source("safunc.R")
-
 # create a function
   
 plot_hp <- function(df, ctry, indicator, freq, save, out.type){
@@ -37,19 +34,18 @@ plot_hp <- function(df, ctry, indicator, freq, save, out.type){
     print("the data should be monthly or quarterly!")
   }
   
-  # remove the seasonal component
-  ts.nsa <- 
+  # convert the data into ts values
+  ts.actual <- 
     df %>% 
     filter(country == ctry) %>% 
     select(indicator) %>%
     unlist() %>% 
     as.numeric() %>% 
+    log() %>% 
     ts(frequency = freq)
 
-  ts.sa <- sa_adj(ts.nsa)
-  
   # Conduct HP filter
-  ts.filtered <- hpfilter(log(ts.sa), freq = lamb, type = "lambda")
+  ts.filtered <- hpfilter(ts.actual, freq = lamb, type = "lambda")
   
   # find the date
   ts.date <- 
@@ -60,10 +56,11 @@ plot_hp <- function(df, ctry, indicator, freq, save, out.type){
   # Save the data
   df.plot <- 
     ts.date %>% 
-    cbind(actual = log(ts.sa),
-          trend = ts.filtered$trend, 
-          cycle = ts.filtered$cycle * 100) %>% 
-    rename(trend = 'Series 1')
+    cbind(actual = ts.actual,
+          trend  = ts.filtered$trend, 
+          cycle  = ts.filtered$cycle * 100) %>% 
+    rename(trend = 'Series 1') %>% 
+    as_tibble()
   
   # Plot
   g.gap <- 
@@ -83,8 +80,11 @@ plot_hp <- function(df, ctry, indicator, freq, save, out.type){
     theme(legend.position = c(0.15, 0.85))
   
   if (save) {
-    ggsave(plot = g.gap,   width = 5, height = 4, filename = paste("../6_outputs/hp_", ctry, indicator, "_gap.pdf", sep = ""))
-    ggsave(plot = g.trend, width = 5, height = 4, filename = paste("../6_outputs/hp_", ctry, indicator, "_trend.pdf", sep = ""))
+    if(!dir.exists(paste("../6_outputs/", ctry, sep = ""))){
+      dir.create(paste("../6_outputs/", ctry, sep = ""))
+    }
+    ggsave(plot = g.gap,   width = 5, height = 4, filename = paste("../6_outputs/", ctry, "/hp_", ctry, indicator, "_gap.pdf", sep = ""))
+    ggsave(plot = g.trend, width = 5, height = 4, filename = paste("../6_outputs/", ctry, "/hp_", ctry, indicator, "_trend.pdf", sep = ""))
   }
   
   if (out.type == "data") {
@@ -93,8 +93,10 @@ plot_hp <- function(df, ctry, indicator, freq, save, out.type){
     return(list(g.gap, g.trend))
   } else if (out.type == "both"){
     return(list(df.plot, g.gap, g.trend))
+  } else if (out.type == "neither"){
+    print(paste(ctry, indicator, "...complete", sep = " "))
   } else {
-    print("out.type should be data, figure or both.")
+    print("out.type should be data, figure, both or neither.")
   }
 }
 

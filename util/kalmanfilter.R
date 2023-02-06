@@ -22,13 +22,10 @@
   theme_set(theme_solarized())
   
   options(warn = -1)
-  
-  # safunc needed to run this code:
-  # source("safunc.R")
-  
+
 # create a function
   
-plot_kalman <- function(df, ctry, indicator, freq, save, out.type){
+plot_kalman <- function(df, ctry, indicator, save, out.type){
     
   # drop NA rows in advance
   df <- 
@@ -36,19 +33,12 @@ plot_kalman <- function(df, ctry, indicator, freq, save, out.type){
     drop_na()
   
   # remove the seasonal component
-  ts.nsa <- 
+  ts.actual <- 
     df %>% 
     filter(country == ctry) %>% 
-    select(indicator) %>%
-    unlist() %>% 
-    as.numeric() %>% 
-    ts(frequency = freq)
-  
-  # and save as a matrix
-  ts.sa <- 
-    sa_adj(ts.nsa) %>% 
-    log() %>% 
+    select(indicator) %>% 
     as.matrix() %>% 
+    log() %>% 
     t()
   
 # model setup
@@ -68,7 +58,7 @@ plot_kalman <- function(df, ctry, indicator, freq, save, out.type){
   R1 <- matrix('w', 1, 1, byrow = TRUE)
 
   # guess for the initial condition
-  pi1 <- matrix(c(log(ts.sa[1]), 0), 2, 1, byrow = TRUE)
+  pi1 <- matrix(c(log(ts.actual[1]), 0), 2, 1, byrow = TRUE)
   V1  <- diag(1, 2)
   
   # combine all the model specifications
@@ -77,7 +67,7 @@ plot_kalman <- function(df, ctry, indicator, freq, save, out.type){
                      x0 = pi1, V0 = V1, tinitx = 0)
 
   # fit the model
-  fit <- MARSS(y = ts.sa, model = model.list, fit = TRUE)
+  fit <- MARSS(y = ts.actual, model = model.list, fit = TRUE)
 
   # create a data frame
   df.plot <- 
@@ -86,7 +76,7 @@ plot_kalman <- function(df, ctry, indicator, freq, save, out.type){
     select(date) %>%
     cbind(as_tibble(t(fit$states)), 
           as_tibble(t(fit$states.se)), 
-          t(ts.sa)) 
+          t(ts.actual)) 
   
   colnames(df.plot) <- c("date", "potential", "g", "potential.se", "g.se", "actual")
   
@@ -132,8 +122,11 @@ plot_kalman <- function(df, ctry, indicator, freq, save, out.type){
     labs(y = expression(paste({w[t]}, ", % deviation", sep = "")))
     
   if (save) {
-    ggsave(plot = g.gap,       width = 5, height = 4, filename = paste("../6_outputs/kalman_", ctry, indicator, "_gap.pdf", sep = ""))
-    ggsave(plot = g.potential, width = 5, height = 4, filename = paste("../6_outputs/kalman_", ctry, indicator, "_potential.pdf", sep = ""))
+    if(!dir.exists(paste("../6_outputs/", ctry, sep = ""))){
+      dir.create(paste("../6_outputs/", ctry, sep = ""))
+    }
+    ggsave(plot = g.gap,       width = 5, height = 4, filename = paste("../6_outputs/", ctry, "/kalman_", ctry, indicator, "_gap.pdf", sep = ""))
+    ggsave(plot = g.potential, width = 5, height = 4, filename = paste("../6_outputs/", ctry, "/kalman_", ctry, indicator, "_potential.pdf", sep = ""))
   }
   
   if (out.type == "data") {
@@ -142,6 +135,8 @@ plot_kalman <- function(df, ctry, indicator, freq, save, out.type){
     return(list(g.gap, g.potential))
   } else if (out.type == "both"){
     return(list(df.plot, g.gap, g.potential))
+  } else if (out.type == "neither"){
+    print(paste(ctry, indicator, "...complete", sep = " "))
   } else {
     print("out.type should be data, figure or both.")
   }
