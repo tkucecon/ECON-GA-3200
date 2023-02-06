@@ -27,16 +27,12 @@
   
 plot_kalman <- function(df, ctry, indicator, save, out.type){
     
-  # drop NA rows in advance
-  df <- 
-    df %>% 
-    drop_na()
-  
-  # remove the seasonal component
+  # save the actual data to be filtered
   ts.actual <- 
     df %>% 
     filter(country == ctry) %>% 
     select(indicator) %>% 
+    drop_na() %>% 
     as.matrix() %>% 
     log() %>% 
     t()
@@ -58,8 +54,8 @@ plot_kalman <- function(df, ctry, indicator, save, out.type){
   R1 <- matrix('w', 1, 1, byrow = TRUE)
 
   # guess for the initial condition
-  pi1 <- matrix(c(log(ts.actual[1]), 0), 2, 1, byrow = TRUE)
-  V1  <- diag(1, 2)
+  pi1 <- matrix(c(ts.actual[1], 0), 2, 1, byrow = TRUE)
+  V1  <- matrix(c(0.001, 0, 0, 0.00001), 2, 2, byrow = TRUE)
   
   # combine all the model specifications
   model.list <- list(B = B1, U = U1, Q = Q1, 
@@ -73,17 +69,14 @@ plot_kalman <- function(df, ctry, indicator, save, out.type){
   df.plot <- 
     df %>% 
     filter(country == ctry) %>% 
-    select(date) %>%
+    select(date, indicator) %>%
+    drop_na() %>% 
+    select(date) %>% 
     cbind(as_tibble(t(fit$states)), 
           as_tibble(t(fit$states.se)), 
           t(ts.actual)) 
   
   colnames(df.plot) <- c("date", "potential", "g", "potential.se", "g.se", "actual")
-  
-  df.plot <- 
-    df.plot %>% 
-    mutate(g    = 100 * g, 
-           g.se = 100 * g.se)
   
   # plot to compare y* and y 
   g.potential <- 

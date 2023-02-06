@@ -9,7 +9,6 @@
 
 # library
   library("tidyverse")
-  library("reticulate")
   library("lubridate")
   library("mFilter")
   library("ggthemes")
@@ -23,7 +22,7 @@
   
   load("../4_data/df_macro.rda")
 
-# conduct the HP filtering------------------------------------------------------
+# conduct the filtering---------------------------------------------------------
   
   # single run: HP filtering
   plot_hp(df = df.macro,
@@ -37,12 +36,12 @@
   plot_kalman(df = df.macro,
               ctry = "JP",
               indicator = "GDP", 
-              save = TRUE, 
+              save = FALSE, 
               out.type = "figure")
   
   # check the countries
   countries <- 
-    df.gdp %>% 
+    df.macro %>% 
     select(country) %>% 
     distinct() %>% 
     unlist() %>% 

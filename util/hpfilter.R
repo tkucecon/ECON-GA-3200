@@ -20,11 +20,6 @@
   
 plot_hp <- function(df, ctry, indicator, freq, save, out.type){
   
-  # drop NA rows in advance
-  df <- 
-    df %>% 
-    drop_na()
-  
   # save lambda according to the frequency
   if (freq == 4) {
     lamb <- 1600
@@ -39,6 +34,7 @@ plot_hp <- function(df, ctry, indicator, freq, save, out.type){
     df %>% 
     filter(country == ctry) %>% 
     select(indicator) %>%
+    drop_na() %>% 
     unlist() %>% 
     as.numeric() %>% 
     log() %>% 
@@ -50,7 +46,9 @@ plot_hp <- function(df, ctry, indicator, freq, save, out.type){
   # find the date
   ts.date <- 
     df %>% 
+    select(date, country, indicator) %>% 
     filter(country == ctry) %>% 
+    drop_na() %>% 
     select(date)
   
   # Save the data
