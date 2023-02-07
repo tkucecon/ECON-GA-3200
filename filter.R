@@ -30,7 +30,7 @@
           indicator = "GDP", 
           freq = 4, 
           save = TRUE, 
-          out.type = "data")
+          out.type = "figure")
   
   # single run: Kalman filtering
   plot_kalman(df = df.macro,
