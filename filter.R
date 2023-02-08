@@ -1,22 +1,26 @@
 
 # ------------------------------------------------------------------------------
 # About this code
-# written by Takanori Takeuchi(tt2292@nyu.edu)
-# HP filtering and Kalman filtering
+# Conduct all the filtering
+# 1. HP filtering
+# 2. simple Kalman filtering 
+# 3. Holston-Laubach-Williams(2017) state-space estimation
 # ------------------------------------------------------------------------------
 
 # set up------------------------------------------------------------------------
 
 # library
   library("tidyverse")
-  library("lubridate")
   library("mFilter")
   library("ggthemes")
+  library("tis")
+  library("nloptr")
   theme_set(theme_solarized())
   
 # load the function
   source("util/hpfilter.R")
   source("util/kalmanfilter.R")
+  source("util/holston_laubach_williams.R")
   
 # load the GDP data-------------------------------------------------------------
   
@@ -38,6 +42,16 @@
               indicator = "GDP", 
               save = FALSE, 
               out.type = "figure")
+  
+  # single run: Holston-Laubach-Williams estimation
+  plot_hwl(df = df.macro,
+           ctry = "JP",
+           smoothing = FALSE,
+           save = TRUE,
+           out.type = "figure")
+  source("util/rm_hlw.R")
+
+# conduct the filtering at once?------------------------------------------------
   
   # check the countries
   countries <- 

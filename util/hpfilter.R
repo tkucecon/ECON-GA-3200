@@ -74,7 +74,7 @@ plot_hp <- function(df, ctry, indicator, freq, save, out.type){
     gather(key = "key", value = "value", actual, trend) %>% 
     ggplot(aes(x = date, y = value, color = key)) + 
     geom_line(linewidth = 0.7) + 
-    labs(color = NULL) + 
+    labs(y = "log of GDP", color = NULL) + 
     theme(legend.position = c(0.15, 0.85))
   
   if (save) {

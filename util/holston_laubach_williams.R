@@ -69,7 +69,7 @@ plot_hwl <- function(df, ctry, smoothing, save, out.type){
   data.start    <- shiftQuarter(sample.start, -4)
   
   # Set start index for y
-  g.pot.start.index <- 1 + ti(shiftQuarter(sample.start,-3),'quarterly')-ti(data.start,'quarterly')
+  g.pot.start.index <<- 1 + ti(shiftQuarter(sample.start,-3),'quarterly')-ti(data.start,'quarterly')
   
   # Set number of iterations for Monte Carlo standard error procedure
   niter <- 5000
@@ -79,10 +79,10 @@ plot_hwl <- function(df, ctry, smoothing, save, out.type){
   #------------------------------------------------------------------------------#
   
   # Upper bound on a_3 parameter (slope of the IS curve)
-  a3.constraint <- -0.25
+  a3.constraint <<- -0.25
   
   # Lower bound on b_2 parameter (slope of the Phillips curve)
-  b2.constraint <- 0.1
+  b2.constraint <<- 0.1
   
   # data inputs
   log.output             <- log(df.est$GDP) 
@@ -150,7 +150,7 @@ plot_hwl <- function(df, ctry, smoothing, save, out.type){
     gather(key = "key", value = "value", actual, potential) %>% 
     ggplot(aes(x = date, y = value, color = key)) + 
     geom_line(linewidth = 0.7) + 
-    labs(color = NULL) + 
+    labs(y = "log of GDP", color = NULL) + 
     theme(legend.position = c(0.15, 0.85))
   
   g.rstar <- 
@@ -158,7 +158,7 @@ plot_hwl <- function(df, ctry, smoothing, save, out.type){
     ggplot(aes(x = date, y = rstar)) +
     geom_line(linewidth = 0.7) +
     geom_hline(yintercept = 0, linewidth = 0.5) +
-    labs(y = "%")
+    labs(y = "natural r, %")
   
   # return the output
   if (save) {
@@ -181,13 +181,5 @@ plot_hwl <- function(df, ctry, smoothing, save, out.type){
   } else {
     print("out.type should be data, figure, both or neither.")
   }
+  
 }
-
-# # standard errors for the filtered data
-# if (run.se) {
-#   # standard errors for y*, r* and g
-#   est.se <- 
-#     est.result$out.stage3$se$se %>% 
-#     as_tibble()
-#   colnames(est.se) <- c("potential.se", "rstar.se", "g.se")
-# }

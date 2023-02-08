@@ -54,7 +54,7 @@ plot_kalman <- function(df, ctry, indicator, save, out.type){
   R1 <- matrix('w', 1, 1, byrow = TRUE)
 
   # guess for the initial condition
-  pi1 <- matrix(c(ts.actual[1], 0), 2, 1, byrow = TRUE)
+  pi1 <- matrix(c(ts.actual[1], 0.02), 2, 1, byrow = TRUE)
   V1  <- matrix(c(0.001, 0, 0, 0.00001), 2, 2, byrow = TRUE)
   
   # combine all the model specifications
@@ -93,7 +93,7 @@ plot_kalman <- function(df, ctry, indicator, save, out.type){
                 alpha = 0.5) + 
     geom_line(aes(x = date, y = value, color = key), linewidth = 0.7) + 
     theme(legend.position = c(0.2, 0.85)) + 
-    labs(y = expression(paste({y[t]}, "*", sep = "")), color = NULL)
+    labs(y = "log of GDP", color = NULL)
 
   # plot the output gap
   g.gap <- 
