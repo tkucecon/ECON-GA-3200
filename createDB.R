@@ -25,14 +25,17 @@
 # 1. download data from FRED----------------------------------------------------
 
   # tickers for real GDP, private consumption and private investment
-  tickers <- c("GDP", "PCEC", "GPDI")
+  tickers <- c("GDPC1", "PCEC96", "GPDIC1")
   
   # download the data
   df.us <- 
     tq_get(tickers, get = "economic.data", from = "1994-01-01") %>% 
     mutate(price = price / 4) %>% # original data is annualized
     spread(key = "symbol", value = "price") %>% 
-    mutate(country = "US")
+    mutate(country = "US") %>% 
+    rename(GDP = GDPC1,
+           PCEC = PCEC96,
+           GPDI = GPDIC1)
 
 # 2. Load the data for Japan----------------------------------------------------
   
@@ -81,7 +84,7 @@
 # For other indices, you can download any variables you like from Econdb
   
   # set up the parameters
-  start <- as.Date("1990-1-1")
+  start <- as.Date("1994-1-1")
   end <- as.Date("2022-12-31")
   countries <- c('US', 'JP', 'DE', 'FR', 'UK', 'IT', 'EA')
   indicators <- c('CPI', # consumer price index
