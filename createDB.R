@@ -1,7 +1,6 @@
 
 # ------------------------------------------------------------------------------
 # About this code
-# written by Takanori Takeuchi(tt2292@nyu.edu)
 # Creates database for GDP and its components
 # Readme: There are three sources of data for this dataset
 # 1. FRED for the US
@@ -32,11 +31,22 @@
     tq_get(tickers, get = "economic.data", from = "1994-01-01") %>% 
     mutate(price = price / 4) %>% # original data is annualized
     spread(key = "symbol", value = "price") %>% 
-    mutate(country = "US") %>% 
     rename(GDP = GDPC1,
            PCEC = PCEC96,
            GPDI = GPDIC1)
-
+  
+  # data contains monthly consumption after 2002: should be quarter average
+  df.us <- 
+    df.us %>% 
+    mutate(year    = year(date),
+           quarter = quarter(date)) %>% 
+    group_by(year, quarter) %>% 
+    summarise_if(is.numeric, mean, na.rm = TRUE) %>% 
+    ungroup() %>% 
+    mutate(date = as.Date(paste(year, quarter * 3 - 2, 1, sep = "-"))) %>% 
+    mutate(country = "US") %>% 
+    select(date, country, GDP, PCEC, GPDI)
+    
 # 2. Load the data for Japan----------------------------------------------------
   
   # load the data
@@ -89,8 +99,9 @@
   countries <- c('US', 'JP', 'DE', 'FR', 'UK', 'IT', 'EA')
   indicators <- c('CPI', # consumer price index
                   'PCE', # personal consumption expenditure price index
+                  # 'URATE', # unemployment rates
                   'POLIR', # policy rate (short term rate)
-                  'Y10YD' # 10-year yield (long term rate)
+                  'Y10YD'# 10-year yield (long term rate)
                   )
 
   # load the Econdb class
@@ -133,6 +144,12 @@
   # then merge the quarterly data
   df.macro <- 
     left_join(df.gdp, df.rate, by = c('country', 'date'))
+
+  # check if "4_data" folder exists
+  # if not, create a folder
+  if(!dir.exists("../4_data")){
+    dir.create("../4_data")
+  }
   
   # save as the master db for filtering in the 4_data folder
   save(df.macro, file = "../4_data/df_macro.rda")
