@@ -3,7 +3,7 @@
 # About this code
 # Creates database for GDP and its components
 # Readme: There are three sources of data for this dataset
-# 1. FRED for the US
+# 1. FRED for the US and Korea
 # 2. Cabinet Office of Japan for Japan (see 4.data folder for details)
 # 3. Eurostat through Econdb for the Euro countries
 # ↑ They are all constructed as seasonally adjusted quarterly real data
@@ -21,7 +21,7 @@
   library("readxl")
   library("tidyquant")
 
-# 1. download data from FRED----------------------------------------------------
+# 1-1. download data from FRED: US----------------------------------------------
 
   # tickers for real GDP, private consumption and private investment
   tickers <- c("GDPC1", "PCEC96", "GPDIC1")
@@ -46,7 +46,24 @@
     mutate(date = as.Date(paste(year, quarter * 3 - 2, 1, sep = "-"))) %>% 
     mutate(country = "US") %>% 
     select(date, country, GDP, PCEC, GPDI)
-    
+  
+# 1-2. download data from FRED: Korea-------------------------------------------
+  
+  # tickers for real GDP, private consumption and private investment
+  tickers <- c("NGDPRSAXDCKRQ", "KORPFCEQDSMEI", "NAEXKP04KRQ189S")
+  
+  # download the data
+  df.kr <- 
+    tq_get(tickers, get = "economic.data", from = "1994-01-01") %>% 
+    mutate(price = price / 4) %>% # original data is annualized
+    spread(key = "symbol", value = "price") %>% 
+    rename(GDP = NGDPRSAXDCKRQ,
+           PCEC = KORPFCEQDSMEI,
+           GPDI = NAEXKP04KRQ189S) %>% 
+    mutate(PCEC = PCEC / 1000000,
+           GPDI = GPDI / 1000000) %>%  # adjust the unit
+    mutate(country = "KR")
+  
 # 2. Load the data for Japan----------------------------------------------------
   
   # load the data
@@ -96,10 +113,10 @@
   # set up the parameters
   start <- as.Date("1994-1-1")
   end <- as.Date("2022-12-31")
-  countries <- c('US', 'JP', 'DE', 'FR', 'UK', 'IT', 'EA')
+  countries <- c('US', 'JP', 'DE', 'FR', 'UK', 'IT', 'KR')
   indicators <- c('CPI', # consumer price index
                   'PCE', # personal consumption expenditure price index
-                  # 'URATE', # unemployment rates
+                  'URATE', # unemployment rates
                   'POLIR', # policy rate (short term rate)
                   'Y10YD'# 10-year yield (long term rate)
                   )
@@ -115,13 +132,18 @@
     cbind(py_to_r(attributes(df.rate)$pandas.index$to_frame())) %>%
     mutate(date = ymd(as.Date(date)) + 1)
   
-  # get the policy rates of EU area
+  # get the policy rates of Euro area
   df.eapolir <- 
-    df.rate %>% 
-    filter(country == "EA") %>% 
-    rename(POLIR.EA = POLIR) %>% 
-    select(date, POLIR.EA)
-  
+    tq_get("ECBDFR", get = "economic.data", from = "1994-01-01") %>% 
+    rename(ECBDFR = price) %>% 
+    mutate(year    = year(date),
+           quarter = quarter(date)) %>% 
+    group_by(year, quarter) %>% 
+    summarise_if(is.numeric, mean, na.rm = TRUE) %>% 
+    ungroup() %>% 
+    mutate(date = as.Date(paste(year, quarter * 3 - 2, 1, sep = "-"))) %>% 
+    select(date, ECBDFR)
+
   eu.countries <- c('DE', 'FR', 'UK', 'IT')
   
   # process the data 
@@ -131,7 +153,7 @@
     mutate(PI = PRICE / lag(PRICE, n = 4) * 100 - 100) %>% 
     left_join(df.eapolir, by = "date") %>% 
     mutate(POLIR = ifelse(country %in% eu.countries, 
-                          POLIR.EA, POLIR)) %>% 
+                          ECBDFR, POLIR)) %>% 
     select(date, country, PI, POLIR, Y10YD) %>% 
     filter(country != "EA")
     
@@ -139,7 +161,7 @@
   
   # Now merge all the GDP data 
   df.gdp <- 
-    rbind(df.us, df.jp, df.euro)
+    rbind(df.us, df.kr, df.jp, df.euro)
   
   # then merge the quarterly data
   df.macro <- 
