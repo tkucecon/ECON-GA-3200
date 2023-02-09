@@ -92,7 +92,7 @@ plot_kalman <- function(df, ctry, indicator, save, out.type){
                 fill = "gray",
                 alpha = 0.5) + 
     geom_line(aes(x = date, y = value, color = key), linewidth = 0.7) + 
-    theme(legend.position = c(0.2, 0.85)) + 
+    theme(legend.position = c(0.25, 0.85)) + 
     labs(y = "log of GDP", color = NULL)
 
   # plot the output gap
@@ -118,8 +118,8 @@ plot_kalman <- function(df, ctry, indicator, save, out.type){
     if(!dir.exists(paste("../6_outputs/", ctry, sep = ""))){
       dir.create(paste("../6_outputs/", ctry, sep = ""))
     }
-    ggsave(plot = g.gap,       width = 5, height = 4, filename = paste("../6_outputs/", ctry, "/kalman_", ctry, indicator, "_gap.pdf", sep = ""))
-    ggsave(plot = g.potential, width = 5, height = 4, filename = paste("../6_outputs/", ctry, "/kalman_", ctry, indicator, "_potential.pdf", sep = ""))
+    ggsave(plot = g.gap,       width = 3, height = 4, filename = paste("../6_outputs/", ctry, "/kalman_", ctry, indicator, "_gap.pdf", sep = ""))
+    ggsave(plot = g.potential, width = 3, height = 4, filename = paste("../6_outputs/", ctry, "/kalman_", ctry, indicator, "_potential.pdf", sep = ""))
   }
   
   if (out.type == "data") {

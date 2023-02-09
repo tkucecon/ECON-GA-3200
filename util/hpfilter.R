@@ -75,14 +75,14 @@ plot_hp <- function(df, ctry, indicator, freq, save, out.type){
     ggplot(aes(x = date, y = value, color = key)) + 
     geom_line(linewidth = 0.7) + 
     labs(y = "log of GDP", color = NULL) + 
-    theme(legend.position = c(0.15, 0.85))
+    theme(legend.position = c(0.25, 0.85))
   
   if (save) {
     if(!dir.exists(paste("../6_outputs/", ctry, sep = ""))){
       dir.create(paste("../6_outputs/", ctry, sep = ""))
     }
-    ggsave(plot = g.gap,   width = 5, height = 4, filename = paste("../6_outputs/", ctry, "/hp_", ctry, indicator, "_gap.pdf", sep = ""))
-    ggsave(plot = g.trend, width = 5, height = 4, filename = paste("../6_outputs/", ctry, "/hp_", ctry, indicator, "_trend.pdf", sep = ""))
+    ggsave(plot = g.gap,   width = 3, height = 4, filename = paste("../6_outputs/", ctry, "/hp_", ctry, indicator, "_gap.pdf", sep = ""))
+    ggsave(plot = g.trend, width = 3, height = 4, filename = paste("../6_outputs/", ctry, "/hp_", ctry, indicator, "_trend.pdf", sep = ""))
   }
   
   if (out.type == "data") {

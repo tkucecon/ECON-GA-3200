@@ -40,7 +40,7 @@
   plot_kalman(df = df.macro,
               ctry = "JP",
               indicator = "GDP", 
-              save = FALSE, 
+              save = TRUE, 
               out.type = "figure")
   
   # single run: Holston-Laubach-Williams estimation
