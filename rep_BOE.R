@@ -165,14 +165,23 @@
     testing(df.JST.split)
   
 # ------------------------------------------------------------------------------
-# Define recipes to process the features
-# ... to improve the accuracy and interpretability of the model
+# Define the formulas
 # ------------------------------------------------------------------------------
-  
+
   # define a base formula
   formula.base <- 
     as.formula(crisis ~ credit + credit.global + slope + slope.global + 
                  pi + money + equity + rcon + pdebt + iy + ca + dsr)
+  
+# ------------------------------------------------------------------------------
+# Define recipes to process the features
+# ... to improve the accuracy and interpretability of the model
+  
+# This classification is highly biased toward normal regime,
+# which leads to a terrible prediction power of the crisis
+# Thus here I employed some algorithms to deal with this imbalance
+# see footnote 17 of the paper
+# ------------------------------------------------------------------------------
   
   # create a base recipe 
   recipe.base <- 
@@ -180,77 +189,119 @@
     # scale all the predictors to be distributed ~ N(0,1) 
     step_scale(all_predictors()) 
   
-  # important! This classification is highly biased toward normal regime,
-  # which leads to a terrible prediction power of the crisis
-  # Thus here I employed some algorithms to deal with this imbalance
-  # otherwise the result will be terrible...
-
   # create a recipe using down sampling
   recipe.downsampling <- 
     recipe.base %>% 
     # conduct down sampling to deal with the unbalanced data
     # here under ratio is 1 (default)... can be modified
     step_downsample(all_outcomes(), seed = 2292, skip = TRUE)
-
+  
+  # create a recipe using down sampling
+  recipe.upsampling <- 
+    recipe.base %>% 
+    # conduct up sampling: over ratio is adjustable
+    step_upsample(all_outcomes(), seed = 2292, skip = TRUE, 
+                  over_ratio = 0.5)
+  
   # create a recipe using SMOTE algorithm
   # this is a kind of up sampling, but more advanced (imputes the data from knn)
   recipe.smote <- 
     recipe.base %>% 
     # conduct smote: over ratio is adjustable
     step_smote(all_outcomes(), seed = 2292, skip = TRUE, 
-               over_ratio = 0.25, neighbors = 5)
-  
+               over_ratio = 0.5, neighbors = 5)
 
 # ------------------------------------------------------------------------------
 # Define models for the prediction
 # ------------------------------------------------------------------------------
   
-  # logistic regression for classification
+  # logistic regression spec
   lr.spec <- 
     logistic_reg() %>% 
     set_engine("glm") %>% 
+    set_mode(mode = "classification")
+  
+  # decision tree spec
+  tree.spec <- 
+    decision_tree() %>% 
+    set_engine("rpart") %>% 
+    set_mode(mode = "classification")
+
+  # random forest spec
+  forest.spec <- 
+    rand_forest() %>% 
+    set_engine("ranger") %>% 
+    set_mode(mode = "classification")
+  
+  # SVM (radial basis function)
+  svm.spec <- 
+    svm_rbf() %>% 
+    set_engine("kernlab") %>% 
     set_mode(mode = "classification")
   
 # ------------------------------------------------------------------------------
 # Set the workflow
 # ------------------------------------------------------------------------------
   
-  # define the workflow
+  # define the workflows
   wflow.JST <-
-    workflow() %>% 
-    # add the recipes here
-    add_recipe(recipe = recipe.base) %>% 
-    # add the models here
-    add_model(spec = lr.spec)
+    workflow_set(
+      # add the recipes here
+      preproc = list(
+        # downsampling = recipe.downsampling,
+        # upsampling   = recipe.upsampling,
+        # smote        = recipe.smote,
+        base         = recipe.base
+      ),
+      # indicate models here
+      models = list(
+        tree     = tree.spec,
+        forest   = forest.spec,
+        svm      = svm.spec,
+        logistic = lr.spec
+        ),
+      cross = TRUE
+    )
+
+# ------------------------------------------------------------------------------
+# Define the resampling method
+# ------------------------------------------------------------------------------
+  
+  # resampling method: k-fold cross validation
+  folds.JST <- 
+    df.JST.train %>% 
+    vfold_cv(v = 10, strata = crisis)
   
 # ------------------------------------------------------------------------------
-# Fit the model
+# Apply the workflows to the resampled data
 # ------------------------------------------------------------------------------
   
   # fit the model
   fitted.JST <- 
     wflow.JST %>% 
-    fit(data = df.JST.train)
-
+    workflow_map(
+      fn = "fit_resamples",
+      resamples = folds.JST,
+      seed = 2292
+    )
+    
 # ------------------------------------------------------------------------------
 # Evaluate the result
 # ------------------------------------------------------------------------------
 
-  # create a data frame containing both true data and prediction
-  df.JST.result <- 
-    augment(fitted.JST, new_data = df.JST.test)
+  # check and compare the result in data
+  fitted.JST %>% 
+    rank_results(rank_metric = "roc_auc", select_best = TRUE)
   
-  # check the confusion matrix
-  df.JST.result %>% 
-    conf_mat(truth = crisis, estimate = .pred_class)
-  # ... seems most of the heating is missed (why?)
+  # plot the graph to compare
+  g.fit.comparison <- 
+    fitted.JST %>% 
+    autoplot(metric = "roc_auc") + 
+    labs(x = "Rank",
+         y = "AUC of ROC") 
   
-  # check the ROC
-  roc_curve(df.JST.result, crisis, .pred_1) %>% 
-    autoplot()
-
-  # check ROC AUC
-  roc_auc(df.JST.result, crisis, .pred_1)
-  
+  # save the graph
+  ggsave(plot = g.fit.comparison, width = 5, height = 4, 
+         filename = "../6_outputs/comp_of_ML.pdf")
   
   
